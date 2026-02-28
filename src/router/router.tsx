@@ -1,41 +1,64 @@
-
-import { createBrowserRouter } from 'react-router-dom'
-import RootLayout from '../Global_Components/RootLayout'
-import Login from '../features/Authentication/pages/LoginPage'
-import Register from '../features/Authentication/pages/register'
-import ForgotPassword from '../features/Authentication/pages/ForgotPasswordPage'
-import ResetPassword from '../features/Authentication/pages/ResetPasswordPage'
-import Home from '../features/Home/pages/home'
-import RhAdvisorPage from '../features/Authentication/pages/RhAdvisorPage'
-import UnauthorizedPage from '../Global_Components/UnauthorizedPage'
-import ProtectedRoute from '../Global_Components/ProtectedRoute'
-import ErrorBoundary from '../lib/ErrorBoundary'
-import AllActivitiesPage from '../features/Activities/pages/AllActivitiesPage'
-import ActivityForm from '../features/Activities/pages/ActivityForm'
-import ActivityDetails from '../features/Activities/pages/ActivityDetails'
-import { TeamsPage, TeamDetailsPage, ProjectsPage, ProjectDetailsPage } from '../features/Teams'
-import TeamSharePage from '../features/Teams/pages/TeamSharePage'
-import RecruitmentPage from '../features/Recruitment/pages/RecruitmentPage'
-import TemplateCreatePage from '../features/Recruitment/pages/TemplateCreatePage'
-import CandidateEvaluationPage from '../features/Recruitment/pages/CandidateEvaluationPage'
-import MembersPage from '../features/Members/pages/MembersPage'
-import MemberDetailsPage from '../features/Members/pages/MemberDetailsPage'
-import NotFoundPage from '../Global_Components/NotFoundPage'
-import { EXECUTIVE_LEVELS } from '../utils/roles'
+import { createBrowserRouter } from "react-router-dom";
+import RootLayout from "../Global_Components/RootLayout";
+import Login from "../features/Authentication/pages/LoginPage";
+import Register from "../features/Authentication/pages/register";
+import ForgotPassword from "../features/Authentication/pages/ForgotPasswordPage";
+import ResetPassword from "../features/Authentication/pages/ResetPasswordPage";
+import Home from "../features/Home/pages/home";
+import LandingPage from "../features/Home/pages/LandingPage";
+import ClubsPage from "../features/Clubs/pages/ClubsPage";
+import CreateClubPage from "../features/Clubs/pages/CreateClubPage";
+import ClubDetailsPage from "../features/Clubs/pages/ClubDetailsPage";
+import ClubDashboardPage from "../features/Clubs/pages/ClubDashboardPage";
+import NewsFeed from "../features/Community/pages/NewsFeed";
+import MyProfilePage from "../features/Members/pages/MyProfilePage";
+import RhAdvisorPage from "../features/Authentication/pages/RhAdvisorPage";
+import UnauthorizedPage from "../Global_Components/UnauthorizedPage";
+import ProtectedRoute from "../Global_Components/ProtectedRoute";
+import ErrorBoundary from "../lib/ErrorBoundary";
+import AllActivitiesPage from "../features/Activities/pages/AllActivitiesPage";
+import ActivityForm from "../features/Activities/pages/ActivityForm";
+import ActivityDetails from "../features/Activities/pages/ActivityDetails";
+import {
+  TeamsPage,
+  TeamDetailsPage,
+  ProjectsPage,
+  ProjectDetailsPage,
+} from "../features/Teams";
+import TeamSharePage from "../features/Teams/pages/TeamSharePage";
+import RecruitmentPage from "../features/Recruitment/pages/RecruitmentPage";
+import TemplateCreatePage from "../features/Recruitment/pages/TemplateCreatePage";
+import CandidateEvaluationPage from "../features/Recruitment/pages/CandidateEvaluationPage";
+import MembersPage from "../features/Members/pages/MembersPage";
+import MemberDetailsPage from "../features/Members/pages/MemberDetailsPage";
+import NGOCreatePage from "../features/NGO/pages/NGOCreatePage";
+import NGODetailsPage from "../features/NGO/pages/NGODetailsPage";
+import NotFoundPage from "../Global_Components/NotFoundPage";
+import { EXECUTIVE_LEVELS } from "../utils/roles";
 
 export const router = createBrowserRouter([
   {
     element: <RootLayout />,
     children: [
       // Public routes
-      { path: '/', element: <Home /> },
-      { path: '/pending-validation', element: <RhAdvisorPage /> },
-      { path: '/unauthorized', element: <UnauthorizedPage /> },
-      { path: '/teams/share/:token', element: <TeamSharePage /> },
-      
+      { path: "/", element: <LandingPage /> },
+      {
+        path: "/dashboard",
+        element: (
+          <ProtectedRoute>
+            <Home />
+          </ProtectedRoute>
+        ),
+      },
+      { path: "/clubs", element: <ClubsPage /> },
+      { path: "/community", element: <NewsFeed /> },
+      { path: "/pending-validation", element: <RhAdvisorPage /> },
+      { path: "/unauthorized", element: <UnauthorizedPage /> },
+      { path: "/teams/share/:token", element: <TeamSharePage /> },
+
       // Guest-only routes (login/register)
       {
-        path: '/register',
+        path: "/register",
         element: (
           <ProtectedRoute requireGuest={true}>
             <ErrorBoundary>
@@ -45,7 +68,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: '/login',
+        path: "/login",
         element: (
           <ProtectedRoute requireGuest={true}>
             <Login />
@@ -53,7 +76,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: '/forgot-password',
+        path: "/forgot-password",
         element: (
           <ProtectedRoute requireGuest={true}>
             <ForgotPassword />
@@ -61,19 +84,17 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: '/reset-password',
-        element: (
-          <ResetPassword />
-        ),
+        path: "/reset-password",
+        element: <ResetPassword />,
       },
 
       // Activities routes
       {
-        path: '/activities',
+        path: "/activities",
         element: <AllActivitiesPage />,
       },
       {
-        path: '/activities/new',
+        path: "/activities/new",
         element: (
           <ProtectedRoute allowedRoles={EXECUTIVE_LEVELS}>
             <ActivityForm />
@@ -81,7 +102,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: '/activities/:id/edit',
+        path: "/activities/:id/edit",
         element: (
           <ProtectedRoute allowedRoles={EXECUTIVE_LEVELS}>
             <ActivityForm />
@@ -89,16 +110,13 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: '/activities/:id/GET',
-        element: (
-            <ActivityDetails />
-        
-        ),
+        path: "/activities/:id/GET",
+        element: <ActivityDetails />,
       },
 
       // Teams routes
       {
-        path: '/teams',
+        path: "/teams",
         element: (
           <ProtectedRoute>
             <TeamsPage />
@@ -106,7 +124,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: '/teams/:id',
+        path: "/teams/:id",
         element: (
           <ProtectedRoute>
             <TeamDetailsPage />
@@ -116,7 +134,7 @@ export const router = createBrowserRouter([
 
       // Projects routes
       {
-        path: '/projects',
+        path: "/projects",
         element: (
           <ProtectedRoute>
             <ProjectsPage />
@@ -124,17 +142,17 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: '/projects/:id',
+        path: "/projects/:id",
         element: (
-            <ProtectedRoute>
-                <ProjectDetailsPage />
-            </ProtectedRoute>
+          <ProtectedRoute>
+            <ProjectDetailsPage />
+          </ProtectedRoute>
         ),
       },
 
       // Recruitment routes
       {
-        path: '/recruitment',
+        path: "/recruitment",
         element: (
           <ProtectedRoute allowedRoles={EXECUTIVE_LEVELS}>
             <RecruitmentPage />
@@ -142,7 +160,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: '/recruitment/templates/:id/edit',
+        path: "/recruitment/templates/:id/edit",
         element: (
           <ProtectedRoute allowedRoles={EXECUTIVE_LEVELS}>
             <TemplateCreatePage />
@@ -150,7 +168,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: '/recruitment/templates/new',
+        path: "/recruitment/templates/new",
         element: (
           <ProtectedRoute allowedRoles={EXECUTIVE_LEVELS}>
             <TemplateCreatePage />
@@ -158,7 +176,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: '/recruitment/candidates/:id',
+        path: "/recruitment/candidates/:id",
         element: (
           <ProtectedRoute allowedRoles={EXECUTIVE_LEVELS}>
             <CandidateEvaluationPage />
@@ -168,7 +186,7 @@ export const router = createBrowserRouter([
 
       // Members routes
       {
-        path: '/members',
+        path: "/members",
         element: (
           <ProtectedRoute allowedRoles={EXECUTIVE_LEVELS}>
             <MembersPage />
@@ -176,7 +194,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: '/members/:id',
+        path: "/members/:id",
         element: (
           <ProtectedRoute>
             <MemberDetailsPage />
@@ -184,19 +202,59 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: '/me',
+        path: "/me",
         element: (
           <ProtectedRoute>
-            <MemberDetailsPage />
+            <MyProfilePage />
+          </ProtectedRoute>
+        ),
+      },
+
+      // Clubs routes
+      {
+        path: "/clubs/new",
+        element: (
+          <ProtectedRoute>
+            <CreateClubPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/clubs/:id",
+        element: <ClubDetailsPage />,
+      },
+      {
+        path: "/clubs/:id/dashboard",
+        element: (
+          <ProtectedRoute>
+            <ClubDashboardPage />
+          </ProtectedRoute>
+        ),
+      },
+
+      // NGO routes
+      {
+        path: "/ngos/new",
+        element: (
+          <ProtectedRoute>
+            <NGOCreatePage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/ngos/:id",
+        element: (
+          <ProtectedRoute>
+            <NGODetailsPage />
           </ProtectedRoute>
         ),
       },
 
       // Catch-all 404
       {
-        path: '*',
+        path: "*",
         element: <NotFoundPage />,
       },
-    ]
-  }
-])
+    ],
+  },
+]);

@@ -68,6 +68,33 @@ drop policy if exists "Profiles: self update" on profiles;
 create policy "Profiles: self update" on profiles
   for update using (auth.uid() = id);
 
+drop policy if exists "Profiles: self insert" on profiles;
+create policy "Profiles: self insert" on profiles
+  for insert with check (auth.uid() = id);
+
+-- Trigger to create profile after sign up
+create or replace function public.handle_new_user()
+returns trigger as $$
+begin
+  insert into public.profiles (id, email, fullname, phone, birth_date)
+  values (
+    new.id,
+    new.email,
+    new.raw_user_meta_data->>'fullname',
+    new.raw_user_meta_data->>'phone',
+    (new.raw_user_meta_data->>'birth_date')::date
+  ) on conflict (id) do nothing;
+  return new;
+end;
+$$ language plpgsql security definer;
+
+-- Note: In Supabase, you must run this on the 'auth.users' table
+-- which may require superuser permissions in the SQL editor.
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute procedure public.handle_new_user();
+
 -- ============================================================
 -- 3. ROLES & POSTES
 -- ============================================================
@@ -528,5 +555,637 @@ create trigger check_completed_task_lock
   for each row execute function prevent_completed_task_modification();
 
 -- ============================================================
+-- 12. CLUBS
+-- ============================================================
+create table if not exists clubs (
+  id           uuid primary key default gen_random_uuid(),
+  name         text not null,
+  description  text,
+  logo_url     text,
+  region       text,
+  president_id uuid not null references auth.users(id) on delete cascade,
+  created_at   timestamptz not null default now(),
+  updated_at   timestamptz not null default now()
+);
+
+-- Per-club roles (President, Vice-President, Secretary, Treasurer, Member, etc.)
+create table if not exists club_roles (
+  id           uuid primary key default gen_random_uuid(),
+  club_id      uuid not null references clubs(id) on delete cascade,
+  name         text not null,
+  is_president boolean not null default false,
+  sort_order   int default 0,
+  created_at   timestamptz not null default now(),
+  unique(club_id, name)
+);
+
+-- Club membership: pending (request) or accepted
+create table if not exists club_members (
+  id           uuid primary key default gen_random_uuid(),
+  club_id      uuid not null references clubs(id) on delete cascade,
+  member_id    uuid not null references auth.users(id) on delete cascade,
+  club_role_id uuid references club_roles(id) on delete set null,
+  status       text not null default 'pending' check (status in ('pending', 'accepted')),
+  is_board_member boolean not null default false,
+  message      text,
+  joined_at    timestamptz,
+  created_at   timestamptz not null default now(),
+  updated_at   timestamptz not null default now(),
+  unique(club_id, member_id)
+);
+
+-- Club events
+create table if not exists club_events (
+  id          uuid primary key default gen_random_uuid(),
+  club_id     uuid not null references clubs(id) on delete cascade,
+  title       text not null,
+  description text,
+  image_url   text,
+  location    text,
+  start_at    timestamptz not null,
+  end_at      timestamptz,
+  created_by  uuid not null references auth.users(id) on delete cascade,
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now()
+);
+
+-- Super admin flag on profiles (if not already added)
+do $$ begin
+  if not exists (
+    select 1 from information_schema.columns
+    where table_name = 'profiles' and column_name = 'is_superadmin'
+  ) then
+    alter table profiles add column is_superadmin boolean not null default false;
+  end if;
+end $$;
+
+-- Helper: check if user is president or accepted board member (SECURITY DEFINER bypasses RLS)
+create or replace function public.is_club_board_member(c_id uuid, u_id uuid)
+returns boolean language plpgsql security definer set search_path = public as $$
+begin
+  return exists (
+    select 1 from clubs c
+    left join club_members cm on cm.club_id = c.id and cm.member_id = u_id
+    where c.id = c_id
+      and (c.president_id = u_id or (cm.status = 'accepted' and cm.is_board_member = true))
+  );
+end; $$;
+
+-- Helper: check if user is accepted member of a club (SECURITY DEFINER bypasses RLS)
+create or replace function public.is_club_accepted_member(c_id uuid, u_id uuid)
+returns boolean language plpgsql security definer set search_path = public as $$
+begin
+  return exists (
+    select 1 from club_members
+    where club_id = c_id and member_id = u_id and status = 'accepted'
+  );
+end; $$;
+
+-- RLS
+alter table clubs       enable row level security;
+alter table club_roles  enable row level security;
+alter table club_members enable row level security;
+alter table club_events  enable row level security;
+
+-- Clubs policies
+drop policy if exists "Clubs: public read" on clubs;
+create policy "Clubs: public read" on clubs for select using (true);
+
+drop policy if exists "Clubs: authenticated create" on clubs;
+create policy "Clubs: authenticated create" on clubs for insert
+  with check (auth.uid() = president_id);
+
+drop policy if exists "Clubs: president or superadmin update" on clubs;
+create policy "Clubs: president or superadmin update" on clubs for update
+  using (
+    auth.uid() = president_id
+    or (select is_superadmin from profiles where id = auth.uid()) = true
+  );
+
+drop policy if exists "Clubs: president or superadmin delete" on clubs;
+create policy "Clubs: president or superadmin delete" on clubs for delete
+  using (
+    auth.uid() = president_id
+    or (select is_superadmin from profiles where id = auth.uid()) = true
+  );
+
+-- Club roles policies
+drop policy if exists "Club roles: read" on club_roles;
+create policy "Club roles: read" on club_roles for select using (true);
+
+drop policy if exists "Club roles: board or superadmin manage" on club_roles;
+drop policy if exists "Club roles: board manage" on club_roles;
+create policy "Club roles: board manage" on club_roles for all
+  using (
+    public.is_club_board_member(club_id, auth.uid())
+    or exists (select 1 from profiles p where p.id = auth.uid() and p.is_superadmin = true)
+  );
+
+-- Club members policies
+drop policy if exists "Club members: read" on club_members;
+create policy "Club members: read" on club_members for select
+  using (
+    member_id = auth.uid()
+    or exists (select 1 from clubs c where c.id = club_id and c.president_id = auth.uid())
+    or public.is_club_accepted_member(club_id, auth.uid())
+  );
+
+drop policy if exists "Club members: request join" on club_members;
+create policy "Club members: request join" on club_members for insert
+  with check (
+    auth.uid() = member_id
+    or public.is_club_board_member(club_id, auth.uid())
+    or exists (select 1 from profiles p where p.id = auth.uid() and p.is_superadmin = true)
+  );
+
+drop policy if exists "Club members: board or superadmin update" on club_members;
+create policy "Club members: board or superadmin update" on club_members for update
+  using (
+    public.is_club_board_member(club_id, auth.uid())
+    or exists (select 1 from profiles p where p.id = auth.uid() and p.is_superadmin = true)
+  );
+
+drop policy if exists "Club members: self or president delete" on club_members;
+create policy "Club members: self or president delete" on club_members for delete
+  using (
+    member_id = auth.uid()
+    or exists (select 1 from clubs c where c.id = club_id and c.president_id = auth.uid())
+    or exists (select 1 from profiles p where p.id = auth.uid() and p.is_superadmin = true)
+  );
+
+-- Club events policies
+drop policy if exists "Club events: public read" on club_events;
+create policy "Club events: public read" on club_events for select using (true);
+
+drop policy if exists "Club events: club board create" on club_events;
+create policy "Club events: club board create" on club_events for insert
+  with check (
+    created_by = auth.uid()
+    and public.is_club_board_member(club_id, auth.uid())
+  );
+
+drop policy if exists "Club events: club board update" on club_events;
+create policy "Club events: club board update" on club_events for update
+  using (
+    public.is_club_board_member(club_id, auth.uid())
+    or exists (select 1 from profiles p where p.id = auth.uid() and p.is_superadmin = true)
+  );
+
+drop policy if exists "Club events: club board delete" on club_events;
+create policy "Club events: club board delete" on club_events for delete
+  using (
+    public.is_club_board_member(club_id, auth.uid())
+    or exists (select 1 from profiles p where p.id = auth.uid() and p.is_superadmin = true)
+  );
+
+-- Trigger: create president role and auto-add president on club creation
+create or replace function on_club_created()
+returns trigger as $$
+begin
+  insert into club_roles (club_id, name, is_president, sort_order)
+  values (new.id, 'President', true, 0);
+
+  insert into club_members (club_id, member_id, status, joined_at, club_role_id)
+  select new.id, new.president_id, 'accepted', now(), id
+  from club_roles where club_id = new.id and is_president = true;
+
+  return new;
+end;
+$$ language plpgsql security definer;
+
+drop trigger if exists on_club_created on clubs;
+create trigger on_club_created
+  after insert on clubs
+  for each row execute procedure on_club_created();
+
+-- Trigger: auto-update updated_at on clubs
+create or replace function clubs_updated_at()
+returns trigger as $$ begin new.updated_at = now(); return new; end; $$ language plpgsql;
+
+drop trigger if exists clubs_updated_at on clubs;
+create trigger clubs_updated_at
+  before update on clubs
+  for each row execute procedure clubs_updated_at();
+
+-- Trigger: auto-update updated_at on club_events
+create or replace function club_events_updated_at()
+returns trigger as $$ begin new.updated_at = now(); return new; end; $$ language plpgsql;
+
+drop trigger if exists club_events_updated_at on club_events;
+create trigger club_events_updated_at
+  before update on club_events
+  for each row execute procedure club_events_updated_at();
+
+-- ============================================================
+-- 13. COMMUNITY: POSTS & COMMENTS
+-- ============================================================
+create table if not exists club_posts (
+  id          uuid default gen_random_uuid() primary key,
+  club_id     uuid references clubs(id) on delete cascade,         -- If null, it's a global public post
+  author_id   uuid not null references profiles(id) on delete cascade,
+  title       text,
+  content     text not null,
+  image_url   text,
+  is_pinned   boolean default false,
+  created_at  timestamp with time zone default timezone('utc', now()) not null,
+  updated_at  timestamp with time zone default timezone('utc', now()) not null
+);
+
+create table if not exists club_comments (
+  id          uuid default gen_random_uuid() primary key,
+  post_id     uuid not null references club_posts(id) on delete cascade,
+  author_id   uuid not null references profiles(id) on delete cascade,
+  content     text not null,
+  created_at  timestamp with time zone default timezone('utc', now()) not null,
+  updated_at  timestamp with time zone default timezone('utc', now()) not null
+);
+
+-- RLS
+alter table club_posts    enable row level security;
+alter table club_comments enable row level security;
+
+-- Posts: SELECT
+drop policy if exists "Club posts: public read if global or club member" on club_posts;
+drop policy if exists "Club posts: read" on club_posts;
+create policy "Club posts: read" on club_posts for select using (
+  club_id is null
+  or exists (
+    select 1 from club_members cm
+    where cm.club_id = club_posts.club_id and cm.member_id = auth.uid() and cm.status = 'accepted'
+  )
+  or exists (
+    select 1 from profiles p where p.id = auth.uid() and p.is_superadmin = true
+  )
+);
+
+-- Posts: INSERT
+drop policy if exists "Club posts: authenticated create" on club_posts;
+drop policy if exists "Club posts: create" on club_posts;
+create policy "Club posts: create" on club_posts for insert with check (
+  author_id = auth.uid()
+  and (
+    club_id is null
+    or exists (
+      select 1 from club_members cm
+      where cm.club_id = club_posts.club_id and cm.member_id = auth.uid() and cm.status = 'accepted'
+    )
+  )
+);
+
+-- Posts: UPDATE
+drop policy if exists "Club posts: author or superadmin manage" on club_posts;
+drop policy if exists "Club posts: update" on club_posts;
+create policy "Club posts: update" on club_posts for update using (
+  author_id = auth.uid()
+  or exists (select 1 from profiles p where p.id = auth.uid() and p.is_superadmin = true)
+);
+
+-- Posts: DELETE
+drop policy if exists "Club posts: delete" on club_posts;
+create policy "Club posts: delete" on club_posts for delete using (
+  author_id = auth.uid()
+  or exists (select 1 from profiles p where p.id = auth.uid() and p.is_superadmin = true)
+);
+
+-- Comments: SELECT
+drop policy if exists "Club comments: public read if global or club member" on club_comments;
+drop policy if exists "Club comments: read" on club_comments;
+create policy "Club comments: read" on club_comments for select using (
+  exists (
+    select 1 from club_posts cp where cp.id = club_comments.post_id and (
+      cp.club_id is null
+      or exists (
+        select 1 from club_members cm
+        where cm.club_id = cp.club_id and cm.member_id = auth.uid() and cm.status = 'accepted'
+      )
+    )
+  )
+  or exists (select 1 from profiles p where p.id = auth.uid() and p.is_superadmin = true)
+);
+
+-- Comments: INSERT
+drop policy if exists "Club comments: authenticated create" on club_comments;
+drop policy if exists "Club comments: create" on club_comments;
+create policy "Club comments: create" on club_comments for insert with check (
+  author_id = auth.uid()
+  and exists (
+    select 1 from club_posts cp where cp.id = post_id and (
+      cp.club_id is null
+      or exists (
+        select 1 from club_members cm
+        where cm.club_id = cp.club_id and cm.member_id = auth.uid() and cm.status = 'accepted'
+      )
+    )
+  )
+);
+
+-- Comments: UPDATE
+drop policy if exists "Club comments: author or superadmin manage" on club_comments;
+drop policy if exists "Club comments: update" on club_comments;
+create policy "Club comments: update" on club_comments for update using (
+  author_id = auth.uid()
+  or exists (select 1 from profiles p where p.id = auth.uid() and p.is_superadmin = true)
+);
+
+-- Comments: DELETE
+drop policy if exists "Club comments: delete" on club_comments;
+create policy "Club comments: delete" on club_comments for delete using (
+  author_id = auth.uid()
+  or exists (select 1 from profiles p where p.id = auth.uid() and p.is_superadmin = true)
+);
+
+
+-- ============================================================
+-- 15. CLUB DEPARTMENTS
+-- ============================================================
+create table if not exists club_departments (
+  id          uuid primary key default gen_random_uuid(),
+  club_id     uuid not null references clubs(id) on delete cascade,
+  name        text not null,
+  description text,
+  created_by  uuid not null references auth.users(id),
+  created_at  timestamptz not null default now(),
+  unique(club_id, name)
+);
+
+create table if not exists club_department_members (
+  id            uuid primary key default gen_random_uuid(),
+  department_id uuid not null references club_departments(id) on delete cascade,
+  member_id     uuid not null references auth.users(id) on delete cascade,
+  role          text default 'member' check (role in ('member','head')),
+  status        text default 'pending' check (status in ('pending','accepted')),
+  created_at    timestamptz not null default now(),
+  unique(department_id, member_id)
+);
+
+alter table club_departments enable row level security;
+alter table club_department_members enable row level security;
+
+-- Departments: club members can see, board can manage
+drop policy if exists "Departments: read" on club_departments;
+create policy "Departments: read" on club_departments for select using (
+  exists (select 1 from club_members cm where cm.club_id = club_departments.club_id and cm.member_id = auth.uid() and cm.status = 'accepted')
+  or public.is_club_board_member(club_id, auth.uid())
+);
+
+drop policy if exists "Departments: board create" on club_departments;
+create policy "Departments: board create" on club_departments for insert with check (
+  public.is_club_board_member(club_id, auth.uid())
+);
+
+drop policy if exists "Departments: board update" on club_departments;
+create policy "Departments: board update" on club_departments for update using (
+  public.is_club_board_member(club_id, auth.uid())
+);
+
+drop policy if exists "Departments: board delete" on club_departments;
+create policy "Departments: board delete" on club_departments for delete using (
+  public.is_club_board_member(club_id, auth.uid())
+);
+
+-- Department members
+drop policy if exists "Dept members: read" on club_department_members;
+create policy "Dept members: read" on club_department_members for select using (true);
+
+drop policy if exists "Dept members: join" on club_department_members;
+create policy "Dept members: join" on club_department_members for insert with check (
+  (member_id = auth.uid() and status = 'pending')
+  or public.is_club_board_member(
+    (select club_id from club_departments where id = department_id), auth.uid()
+  )
+);
+
+drop policy if exists "Dept members: board update" on club_department_members;
+create policy "Dept members: board update" on club_department_members for update using (
+  public.is_club_board_member(
+    (select club_id from club_departments where id = department_id), auth.uid()
+  )
+);
+
+drop policy if exists "Dept members: leave or board remove" on club_department_members;
+create policy "Dept members: leave or board remove" on club_department_members for delete using (
+  member_id = auth.uid()
+  or public.is_club_board_member(
+    (select club_id from club_departments where id = department_id), auth.uid()
+  )
+);
+
+        -- ============================================================
+        -- 16. ORGANIZATION SYSTEM (NGO hierarchy, units, roles, members)
+        -- ============================================================
+
+        -- Add parent reference to ngos for hierarchy
+        alter table ngos add column if not exists parent_id uuid references ngos(id) on delete set null;
+
+        -- Unit types: user-defined names per org (Chapter, Branch, Commission, Team, etc.)
+        create table if not exists ngo_unit_types (
+          id          uuid primary key default gen_random_uuid(),
+          ngo_id      uuid not null references ngos(id) on delete cascade,
+          name        text not null,          -- "Chapter", "Branch", "Committee"...
+          level       int not null default 0, -- 0=root, 1=child, 2=grandchild...
+          icon        text,
+          created_at  timestamptz default now(),
+          unique(ngo_id, name)
+        );
+
+        -- Units: actual instances of a unit type
+        create table if not exists ngo_units (
+          id             uuid primary key default gen_random_uuid(),
+          ngo_id         uuid not null references ngos(id) on delete cascade,
+          unit_type_id   uuid not null references ngo_unit_types(id) on delete cascade,
+          parent_unit_id uuid references ngo_units(id) on delete cascade,
+          name           text not null,
+          description    text,
+          created_at     timestamptz default now(),
+          unique(ngo_id, parent_unit_id, name)
+        );
+
+        -- Roles with fine-grained permissions
+        create table if not exists ngo_roles (
+          id          uuid primary key default gen_random_uuid(),
+          ngo_id      uuid not null references ngos(id) on delete cascade,
+          name        text not null,
+          permissions text[] default '{}',
+          is_admin    boolean default false,
+          color       text default '#6B7280',
+          sort_order  int default 0,
+          unique(ngo_id, name)
+        );
+
+        -- Members with role, unit, engagement
+        create table if not exists ngo_members (
+          id                uuid primary key default gen_random_uuid(),
+          ngo_id            uuid not null references ngos(id) on delete cascade,
+          member_id         uuid not null references auth.users(id) on delete cascade,
+          role_id           uuid references ngo_roles(id) on delete set null,
+          unit_id           uuid references ngo_units(id) on delete set null,
+          status            text default 'pending' check (status in ('pending','accepted','rejected')),
+          engagement_points int default 0,
+          joined_at         timestamptz,
+          created_at        timestamptz default now(),
+          unique(ngo_id, member_id)
+        );
+
+        -- Helper: check if user is NGO admin (creator or admin role)
+        create or replace function public.is_ngo_admin(n_id uuid, u_id uuid)
+        returns boolean language plpgsql security definer set search_path = public as $$
+        begin
+          return (
+            exists (select 1 from ngos where id = n_id and creator_id = u_id)
+            or exists (
+              select 1 from ngo_members nm
+              join ngo_roles nr on nr.id = nm.role_id
+              where nm.ngo_id = n_id and nm.member_id = u_id
+                and nm.status = 'accepted' and nr.is_admin = true
+            )
+          );
+        end; $$;
+
+        -- Helper: check if user is accepted member
+        create or replace function public.is_ngo_member(n_id uuid, u_id uuid)
+        returns boolean language plpgsql security definer set search_path = public as $$
+        begin
+          return exists (
+            select 1 from ngo_members
+            where ngo_id = n_id and member_id = u_id and status = 'accepted'
+          );
+        end; $$;
+
+        -- Helper: check specific permission
+        create or replace function public.has_ngo_permission(n_id uuid, u_id uuid, perm text)
+        returns boolean language plpgsql security definer set search_path = public as $$
+        begin
+          return (
+            exists (select 1 from ngos where id = n_id and creator_id = u_id)
+            or exists (
+              select 1 from ngo_members nm
+              join ngo_roles nr on nr.id = nm.role_id
+              where nm.ngo_id = n_id and nm.member_id = u_id
+                and nm.status = 'accepted'
+                and (nr.is_admin = true or perm = any(nr.permissions) or 'all' = any(nr.permissions))
+            )
+          );
+        end; $$;
+
+        -- RLS
+        alter table ngo_unit_types enable row level security;
+        alter table ngo_units enable row level security;
+        alter table ngo_roles enable row level security;
+        alter table ngo_members enable row level security;
+
+        -- Unit types: members read, admins manage
+        drop policy if exists "NGO unit types: read" on ngo_unit_types;
+        create policy "NGO unit types: read" on ngo_unit_types for select using (
+          public.is_ngo_member(ngo_id, auth.uid()) or public.is_ngo_admin(ngo_id, auth.uid())
+        );
+        drop policy if exists "NGO unit types: manage" on ngo_unit_types;
+        create policy "NGO unit types: manage" on ngo_unit_types for all using (
+          public.has_ngo_permission(ngo_id, auth.uid(), 'manage_units')
+        );
+
+        -- Units: members read, admins manage
+        drop policy if exists "NGO units: read" on ngo_units;
+        create policy "NGO units: read" on ngo_units for select using (
+          public.is_ngo_member(ngo_id, auth.uid()) or public.is_ngo_admin(ngo_id, auth.uid())
+        );
+        drop policy if exists "NGO units: manage" on ngo_units;
+        create policy "NGO units: manage" on ngo_units for all using (
+          public.has_ngo_permission(ngo_id, auth.uid(), 'manage_units')
+        );
+
+        -- Roles: members read, admins manage
+        drop policy if exists "NGO roles: read" on ngo_roles;
+        create policy "NGO roles: read" on ngo_roles for select using (
+          public.is_ngo_member(ngo_id, auth.uid()) or public.is_ngo_admin(ngo_id, auth.uid())
+        );
+        drop policy if exists "NGO roles: manage" on ngo_roles;
+        create policy "NGO roles: manage" on ngo_roles for all using (
+          public.has_ngo_permission(ngo_id, auth.uid(), 'manage_roles')
+        );
+
+        -- Members: members see each other, admins manage, anyone can request join
+        drop policy if exists "NGO members: read" on ngo_members;
+        create policy "NGO members: read" on ngo_members for select using (
+          member_id = auth.uid()
+          or public.is_ngo_member(ngo_id, auth.uid())
+          or public.is_ngo_admin(ngo_id, auth.uid())
+        );
+        drop policy if exists "NGO members: join" on ngo_members;
+        create policy "NGO members: join" on ngo_members for insert with check (
+          (auth.uid() = member_id and status = 'pending')
+          or public.has_ngo_permission(ngo_id, auth.uid(), 'manage_members')
+        );
+        drop policy if exists "NGO members: manage" on ngo_members;
+        create policy "NGO members: manage" on ngo_members for update using (
+          public.has_ngo_permission(ngo_id, auth.uid(), 'manage_members')
+        );
+        drop policy if exists "NGO members: leave or admin remove" on ngo_members;
+        create policy "NGO members: leave or admin remove" on ngo_members for delete using (
+          member_id = auth.uid()
+          or public.is_ngo_admin(ngo_id, auth.uid())
+        );
+
+        -- Auto-add creator as admin member
+        create or replace function on_ngo_created()
+        returns trigger as $$
+        declare
+          admin_role_id uuid;
+        begin
+          -- Create default Admin role
+          insert into ngo_roles (ngo_id, name, permissions, is_admin, color, sort_order)
+          values (new.id, 'Admin', array['all'], true, '#3B82F6', 0)
+          returning id into admin_role_id;
+
+          -- Add creator as member
+          insert into ngo_members (ngo_id, member_id, role_id, status, joined_at)
+          values (new.id, new.creator_id, admin_role_id, 'accepted', now());
+
+          return new;
+        end;
+        $$ language plpgsql security definer;
+
+        drop trigger if exists on_ngo_created on ngos;
+        create trigger on_ngo_created
+          after insert on ngos
+          for each row execute function on_ngo_created();
+
+-- ============================================================
 -- END OF SCHEMA
 -- ============================================================
+-- ============================================================
+-- 14. TEAM MEETINGS
+-- ============================================================
+create table if not exists team_meetings (
+  id uuid default gen_random_uuid() primary key,
+  team_id uuid not null references teams(id) on delete cascade,
+  title text not null,
+  description text,
+  meeting_date timestamp with time zone not null,
+  meeting_link text,
+  created_by uuid references auth.users(id),
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table team_meetings enable row level security;
+
+drop policy if exists "Team meetings: read" on team_meetings;
+create policy "Team meetings: read" on team_meetings for select using (
+  exists (select 1 from public.team_members where team_id = team_meetings.team_id and member_id = auth.uid()) OR
+  exists (select 1 from public.teams where id = team_meetings.team_id and is_public = true)
+);
+
+drop policy if exists "Team meetings: manage" on team_meetings;
+create policy "Team meetings: manage" on team_meetings for all using (
+  public.can_admin_team(team_id, auth.uid())
+);
+-- ============================================================
+-- STORAGE BUCKETS
+-- ============================================================
+insert into storage.buckets (id, name, public) values ('activity-images', 'activity-images', true) on conflict do nothing;
+insert into storage.buckets (id, name, public) values ('activity-attachments', 'activity-attachments', true) on conflict do nothing;
+insert into storage.buckets (id, name, public) values ('profiles_images', 'profiles_images', true) on conflict do nothing;
+
+create policy "Public Access" on storage.objects for select using ( bucket_id in ('activity-images', 'activity-attachments', 'profiles_images') );
+create policy "Auth Insert" on storage.objects for insert with check ( auth.role() = 'authenticated' );
+create policy "Auth Update" on storage.objects for update using ( auth.role() = 'authenticated' );
+create policy "Auth Delete" on storage.objects for delete using ( auth.role() = 'authenticated' );

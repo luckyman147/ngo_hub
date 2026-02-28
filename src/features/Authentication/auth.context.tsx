@@ -11,7 +11,6 @@ type AuthContextType = {
   role: string | null
   poste: string | null
   isValidated: boolean
-  googleSignIn: () => Promise<any>
   signUp: (payload: RegisterDTO) => Promise<any>
   signIn: (payload: LoginDTO) => Promise<any>
   signOut: () => Promise<void>
@@ -27,12 +26,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isValidated, setIsValidated] = useState<boolean>(true)
   const [loading, setLoading] = useState(true)
 
-  const fetchUserData = async (userId: string) => {
+  const fetchUserData = async (currentUser: User) => {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select(
-          `
+        .select(`
           is_validated,
           roles (
             name
@@ -40,14 +38,28 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           postes (
             name
           )
-        `,
-        )
-        .eq('id', userId)
-        .single()
+        `)
+        .eq('id', currentUser.id)
+        .maybeSingle()
 
       if (error) {
         console.error('Error fetching user data:', error)
         return { role: 'member', isValidated: false }
+      }
+
+      if (!data) {
+        // Profile doesn't exist, self-heal by upserting
+        console.warn("Profile missing. Auto-generating profile for user: ", currentUser.id);
+        const { error: insertError } = await supabase.from('profiles').upsert({
+          id: currentUser.id,
+          email: currentUser.email,
+          fullname: currentUser.user_metadata?.fullname || currentUser.email?.split('@')[0] || 'Unknown User'
+        });
+
+        if (insertError) {
+          console.error("Failed to auto-generate profile:", insertError);
+        }
+        return { role: 'member', poste: null, isValidated: false };
       }
 
       return {
@@ -69,7 +81,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const currentUser = data.session?.user ?? null
       setUser(currentUser)
       if (currentUser) {
-        fetchUserData(currentUser.id).then(res => {
+        fetchUserData(currentUser).then(res => {
           setRole(res.role)
           setPoste(res.poste)
           setIsValidated(res.isValidated)
@@ -88,7 +100,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const currentUser = session?.user ?? null
         setUser(currentUser)
         if (currentUser) {
-          fetchUserData(currentUser.id).then(res => {
+          fetchUserData(currentUser).then(res => {
             setRole(res.role)
             setPoste(res.poste)
             setIsValidated(res.isValidated)
@@ -121,8 +133,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
 
     // 1. Create user
-    const { data, error } = await supabase.auth.signUp({ 
-      email, 
+    const { data, error } = await supabase.auth.signUp({
+      email,
       password,
       options: {
         data: {
@@ -136,14 +148,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     return { data }
   }
-const googleSignIn = async () => {
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: 'google',
-  })
-
-  if (error) return { error }
-  return { data }
-}
   const signIn = (payload: LoginDTO) => {
     const { email, password } = payload
     return supabase.auth.signInWithPassword({ email, password })
@@ -168,7 +172,7 @@ const googleSignIn = async () => {
   }
 
   return (
-    <AuthContext.Provider value={{ user, role, poste, isValidated, googleSignIn, signUp, signIn, signOut, loading }}>
+    <AuthContext.Provider value={{ user, role, poste, isValidated, signUp, signIn, signOut, loading }}>
       {children}
     </AuthContext.Provider>
   )

@@ -3,14 +3,14 @@
     "title": "الأعضاء",
     "subtitle": "إدارة أعضاء المنظمة وإحصائياتهم",
     "socialMediaStats": "التواجد على وسائل التواصل الاجتماعي",
-    "activityStats": "تفضيلات الأنشطة",
+    "activityStats": "تفضيلات الفعاليات",
     "committeeStats": "تفضيلات اللجنة",
     "addMember": "إضافة عضو",
     "totalMembers": "إجمالي الأعضاء",
     "leadership": "إشراف القيادة",
     "demographicsTitle": "نظرة عامة على المجتمع",
     "availabilityTitle": "التوفر والجدول الزمني",
-    "performanceTitle": "النشاط والأداء",
+    "performanceTitle": "الفعالية والأداء",
     "financialsTitle": "رسوم العضوية",
     "preferencesTitle": "الاهتمامات والتفضيلات",
     "roles": "أدوار الأعضاء",
@@ -31,7 +31,7 @@
     "financialHealthDesc": "تتبع رسوم العضوية",
     "noAgeData": "لا توجد بيانات عن العمر",
     "noSocialData": "لا توجد بيانات عن وسائل التواصل الاجتماعي",
-    "noActivityData": "لا توجد بيانات عن النشاط",
+    "noActivityData": "لا توجد بيانات عن الفعالية",
     "noCommitteeData": "لا توجد بيانات عن اللجنة",
     "taskPerformance": "أداء المهام",
     "totalDone": "إجمالي المنجز",
@@ -59,6 +59,6 @@
     "topGrowth": "الأكثر تطوراً",
     "pointGains": "زيادة النقاط",
     "monthlyGains": "زيادة النقاط الشهرية",
-    "noPointsActivity": "لا يوجد نشاط نقاط لهذه الفترة."
+    "noPointsActivity": "لا يوجد فعالية نقاط لهذه الفترة."
   }
 }

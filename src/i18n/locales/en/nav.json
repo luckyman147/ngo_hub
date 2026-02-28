@@ -2,7 +2,9 @@
   "home": "Home",
   "members": "Members",
   "teams": "Teams",
-  "activities": "Activities",
+  "activities": "Events",
   "recruitment": "Recruitment",
-  "points": "Leaderboard"
+  "points": "Leaderboard",
+  "createNgo": "Create NGO",
+  "clubs": "Clubs"
 }

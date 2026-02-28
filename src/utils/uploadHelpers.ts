@@ -4,7 +4,7 @@ import supabase from './supabase'
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024 // 5MB
 const MAX_DOCUMENT_SIZE = 10 * 1024 * 1024 // 10MB
 const MAX_VIDEO_SIZE = 50 * 1024 * 1024 // 50MB
-const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml',"text/plain"]
+const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml', "text/plain"]
 const ALLOWED_DOCUMENT_TYPES = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']
 const ALLOWED_VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/ogg', 'video/quicktime']
 
@@ -182,7 +182,7 @@ export const uploadTeamResource = async (file: File): Promise<UploadResult> => {
     const isImage = ALLOWED_IMAGE_TYPES.includes(file.type)
     const maxSize = isImage ? MAX_IMAGE_SIZE : MAX_DOCUMENT_SIZE
     const allowedTypes = isImage ? ALLOWED_IMAGE_TYPES : ALLOWED_DOCUMENT_TYPES
-    
+
     // Validate file
     const validation = validateFile(file, allowedTypes, maxSize)
     if (!validation.valid) {
@@ -257,6 +257,40 @@ export const uploadActivityAttachment = async (file: File): Promise<UploadResult
   } catch (error) {
     console.error('Upload error:', error)
     return { success: false, error: 'Failed to upload attachment' }
+  }
+}
+
+/**
+ * Upload post image to Supabase Storage
+ */
+export const uploadPostImage = async (file: File): Promise<UploadResult> => {
+  try {
+    const validation = validateFile(file, ALLOWED_IMAGE_TYPES, MAX_IMAGE_SIZE)
+    if (!validation.valid) {
+      return { success: false, error: validation.error }
+    }
+
+    const filename = generateUniqueFilename(file.name)
+    const filePath = `posts/${filename}`
+
+    const { data, error } = await supabase.storage
+      .from('activity-images') // Using existing bucket to avoid creating new ones unnecessarily
+      .upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: false
+      })
+
+    if (error) {
+      return { success: false, error: error.message }
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('activity-images')
+      .getPublicUrl(data.path)
+
+    return { success: true, url: publicUrl }
+  } catch (error) {
+    return { success: false, error: 'Failed to upload image' }
   }
 }
 

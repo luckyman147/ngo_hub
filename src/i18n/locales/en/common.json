@@ -13,10 +13,9 @@
     "profile": "My Profile",
     "getStarted": "Get Started",
     "memberLogin": "Member Log In",
-
     "internal": "Internal",
-    "clearFilters": "Clear filters to see all activities",
-    "noActivities": "No activities found matching your criteria.",
+    "clearFilters": "Clear filters to see all events",
+    "noActivities": "No events found matching your criteria.",
     "noTeamsCreated": "No teams created.",
     "exploreTeams": "Explore Teams",
     "manage": "Manage",

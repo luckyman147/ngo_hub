@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth.context'
 import AuthForm from '../components/AuthForm'
 import { useTranslation } from 'react-i18next'
-import GoogleSignInBadge from '../components/GoogleSignInBadge'
 
 export default function Login() {
   const { signIn } = useAuth()
@@ -35,16 +34,19 @@ export default function Login() {
     }
   }
 
+  const inputClasses = 'w-full px-5 py-4 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-2xl focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 dark:text-white outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500'
+  const labelClasses = 'block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1 ml-1'
+
   return (
     <AuthForm title='Welcome Back' onSubmit={handleSubmit} buttonText='Login' link='register' text="Don't have an account?" linkText='Create one'>
       {/* Email */}
       <div>
-        <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 ml-1">Email Address</label>
+        <label className={labelClasses}>Email Address</label>
         <input
           name='email'
           type="email"
           placeholder='name@company.com'
-          className='w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:bg-white focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all'
+          className={inputClasses}
           onChange={handleChange}
         />
         {errors.email && (
@@ -55,11 +57,11 @@ export default function Login() {
       {/* Password */}
       <div>
         <div className="flex items-center justify-between mb-1 ml-1">
-          <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest">Password</label>
+          <label className={labelClasses}>Password</label>
           <button
             type="button"
             onClick={() => navigate('/forgot-password')}
-            className="text-xs font-bold text-(--color-myPrimary) hover:underline"
+            className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline"
           >
             Forgot Password?
           </button>
@@ -68,7 +70,7 @@ export default function Login() {
           type='password'
           name='password'
           placeholder='••••••••'
-          className='w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:bg-white focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all'
+          className={inputClasses}
           onChange={handleChange}
         />
         {errors.password && (
@@ -76,17 +78,6 @@ export default function Login() {
         )}
       </div>
 
-      {/* OR Divider */}
-      <div className='flex items-center my-6 gap-3'>
-        <div className='flex-1 h-px bg-gray-100' />
-        <span className='text-gray-300 text-[10px] font-black tracking-widest'>OR</span>
-        <div className='flex-1 h-px bg-gray-100' />
-      </div>
-
-      {/* Google Login */}
-      <div className="flex justify-center">
-        <GoogleSignInBadge />
-      </div>
     </AuthForm>
   )
 }

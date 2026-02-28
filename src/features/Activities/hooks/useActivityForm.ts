@@ -19,19 +19,19 @@ export interface UseActivityFormReturn {
   errors: ReturnType<typeof useForm<ActivityFormValues>>['formState']['errors']
   watch: ReturnType<typeof useForm<ActivityFormValues>>['watch']
   setValue: ReturnType<typeof useForm<ActivityFormValues>>['setValue']
-  
+
   // Watched values
   activityType: string
   isPaid: boolean
   isOnline: boolean
-  
+
   // State
   isEditMode: boolean
   loading: boolean
   uploading: boolean
   meetingAgenda: AgendaItem[]
   selectedCategoryIds: number[]
-  
+
   // File uploads
   activityImage: ReturnType<typeof useFileUpload>
   pvAttachment: ReturnType<typeof useFileUpload>
@@ -39,8 +39,8 @@ export interface UseActivityFormReturn {
   recapImages: ReturnType<typeof useFileUpload>
   activityVideo: ReturnType<typeof useFileUpload>
   recapVideos: ReturnType<typeof useFileUpload>
-  
-  
+
+
   // Handlers
   setMeetingAgenda: React.Dispatch<React.SetStateAction<AgendaItem[]>>
   setSelectedCategoryIds: React.Dispatch<React.SetStateAction<number[]>>
@@ -79,7 +79,7 @@ export function useActivityForm(): UseActivityFormReturn {
       type: 'event',
       activity_begin_date: formatDateForInput(now),
       activity_end_date: formatDateForInput(oneHourLater),
-      activity_address: 'Local JCI Hammam Sousse'
+      activity_address: 'Main Office'
     }
   })
 
@@ -95,7 +95,7 @@ export function useActivityForm(): UseActivityFormReturn {
   const recapImages = useFileUpload()
   const activityVideo = useFileUpload()
   const recapVideos = useFileUpload()
-  
+
   // Local state
   const [uploading, setUploading] = useState(false)
   const [meetingAgenda, setMeetingAgenda] = useState<AgendaItem[]>([])
@@ -292,7 +292,7 @@ export function useActivityForm(): UseActivityFormReturn {
 
     try {
       const urls = await uploadFiles(data)
-      
+
       toast.dismiss(toastId)
       toast.loading('Saving activity...')
 

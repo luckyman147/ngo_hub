@@ -2,7 +2,7 @@ import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../features/Authentication/auth.context'
 import logo from '../assets/logo.png'
 import { useState, useRef, useEffect } from 'react'
-import { Menu, X, LogOut, Home, Calendar, Users, Target, User, PieChart } from 'lucide-react'
+import { Menu, X, LogOut, Home, Calendar, Users, Target, User, PieChart, Building2, MessageSquare } from 'lucide-react'
 import { EXECUTIVE_LEVELS } from '../utils/roles'
 import { useTranslation } from 'react-i18next'
 import LanguageSwitcher from './LanguageSwitcher'
@@ -27,9 +27,8 @@ export default function Sidebar() {
 
   const mobileTabClass = (path: string) => {
     const isActive = location.pathname === path || (path !== '/' && (location.pathname + '/').startsWith(path + '/'))
-    return `flex flex-col items-center justify-center gap-1 flex-1 py-1 transition-all ${
-      isActive ? 'text-(--color-myPrimary)' : 'text-gray-400'
-    }`
+    return `flex flex-col items-center justify-center gap-1 flex-1 py-1 transition-all ${isActive ? 'text-(--color-myPrimary)' : 'text-gray-400'
+      }`
   }
 
   const handleLogout = async () => {
@@ -59,7 +58,7 @@ export default function Sidebar() {
       <div className={`md:hidden fixed top-0 left-0 right-0 h-16 bg-white/80 backdrop-blur-md border-b z-50 flex items-center px-4 justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
         <img src={logo} alt="Logo" className="h-10" />
         <div className="flex items-center gap-2">
-            <LanguageSwitcher />
+          <LanguageSwitcher />
         </div>
       </div>
 
@@ -70,10 +69,18 @@ export default function Sidebar() {
             <Home className="w-5 h-5" />
             <span className="text-[10px] font-bold uppercase tracking-tighter">{t('nav.home')}</span>
           </Link>
-          
+          <Link to="/clubs" className={mobileTabClass('/clubs')}>
+            <Building2 className="w-5 h-5" />
+            <span className="text-[10px] font-bold uppercase tracking-tighter">{t('nav.clubs')}</span>
+          </Link>
+
           <Link to="/activities" className={mobileTabClass('/activities')}>
             <Calendar className="w-5 h-5" />
             <span className="text-[10px] font-bold uppercase tracking-tighter">{t('nav.activities')}</span>
+          </Link>
+          <Link to="/community" className={mobileTabClass('/community')}>
+            <MessageSquare className="w-5 h-5" />
+            <span className="text-[10px] font-bold uppercase tracking-tighter">Feed</span>
           </Link>
 
           {user && hasExclusiveAccess && (
@@ -92,15 +99,15 @@ export default function Sidebar() {
 
           {user ? (
             <Link to="/me" className={mobileTabClass('/me')}>
-                <div className="w-6 h-6 rounded-full bg-gray-100 border overflow-hidden">
-                    {isValidAvatarUrl ? (
-                         <img src={avatarUrl} className="w-full h-full object-cover" />
-                    ) : (
-                        <div className="w-full h-full flex items-center justify-center text-[10px] text-gray-400 font-bold">
-                            {user.user_metadata?.fullname?.charAt(0).toUpperCase()}
-                        </div>
-                    )}
-                </div>
+              <div className="w-6 h-6 rounded-full bg-gray-100 border overflow-hidden">
+                {isValidAvatarUrl ? (
+                  <img src={avatarUrl} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-[10px] text-gray-400 font-bold">
+                    {user.user_metadata?.fullname?.charAt(0).toUpperCase()}
+                  </div>
+                )}
+              </div>
               <span className="text-[10px] font-bold uppercase tracking-tighter">{t('common.profile')}</span>
             </Link>
           ) : (
@@ -111,8 +118,8 @@ export default function Sidebar() {
           )}
 
           <button onClick={() => setIsMobileOpen(true)} className="flex flex-col items-center justify-center gap-1 flex-1 py-1 text-gray-400">
-             <Menu className="w-5 h-5" />
-             <span className="text-[10px] font-bold uppercase tracking-tighter">{t('common.more')}</span>
+            <Menu className="w-5 h-5" />
+            <span className="text-[10px] font-bold uppercase tracking-tighter">{t('common.more')}</span>
           </button>
         </div>
       </div>
@@ -178,12 +185,20 @@ export default function Sidebar() {
         {/* NAV LINKS */}
         <nav className="flex-1 p-4 space-y-1">
           <NavLink to="/" className={navLinkClass}>
-             <Home className="w-4 h-4" />
+            <Home className="w-4 h-4" />
             <span className="flex-1">{t('nav.home')}</span>
           </NavLink>
+          <NavLink to="/clubs" className={navLinkClass}>
+            <Building2 className="w-4 h-4" />
+            <span className="flex-1">{t('nav.clubs')}</span>
+          </NavLink>
           <NavLink to="/activities" className={navLinkClass}>
-             <Calendar className="w-4 h-4" />
+            <Calendar className="w-4 h-4" />
             <span className="flex-1">{t('nav.activities')}</span>
+          </NavLink>
+          <NavLink to="/community" className={navLinkClass}>
+            <MessageSquare className="w-4 h-4" />
+            <span className="flex-1">Community Feed</span>
           </NavLink>
 
           {user && (
@@ -191,21 +206,21 @@ export default function Sidebar() {
               {hasExclusiveAccess && (
                 <>
                   <NavLink to="/recruitment" className={navLinkClass}>
-                     <PieChart className="w-4 h-4" />
+                    <PieChart className="w-4 h-4" />
                     <span className="flex-1">{t('nav.recruitment')}</span>
                   </NavLink>
                   <NavLink to="/members" end className={navLinkClass}>
-                     <Users className="w-4 h-4" />
+                    <Users className="w-4 h-4" />
                     <span className="flex-1">{t('nav.members')}</span>
                   </NavLink>
                 </>
               )}
               <NavLink to="/teams" className={navLinkClass}>
-                 <Target className="w-4 h-4" />
+                <Target className="w-4 h-4" />
                 <span className="flex-1">{t('nav.teams')}</span>
               </NavLink>
               <NavLink to="/me" className={navLinkClass}>
-                 <User className="w-4 h-4" />
+                <User className="w-4 h-4" />
                 <span className="flex-1">{t('common.profile')}</span>
               </NavLink>
             </>

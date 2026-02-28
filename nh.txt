@@ -1,0 +1,46 @@
+Unified Organization System
+Overview
+We are moving to an Abstract Entity Organization model. There is no longer a strict database distinction between a "Club" and an "NGO". Both are just "Organizations" (orgs). We will drop all existing club, ngo, and related tables, and rebuild the system from scratch with a clean, unified schema. To accelerate development, all Row Level Security (RLS) policies will be fully public (read and write access for anyone). We can lock down RLS later once the frontend is fully wired up.
+
+Database Schema (The "Rebuild")
+We will create a massive SQL script to:
+
+DROP TABLE for all existing club and ngo tables (with CASCADE).
+Create the new org ecosystem.
+New Tables
+orgs: The core entity (id, name, type (enum: 'club' | 'ngo'), mission, description, parent_id, etc.)
+org_unit_types: User-defined structural names (Chapter, Team, Department)
+org_units: Instances of those types
+org_roles: Roles (President, Member, etc.) with permissions arrays
+org_members: Links users to orgs, roles, and units. Includes engagement points.
+org_events, org_posts, org_comments: Unified events and community feeds.
+Public RLS
+Every table will have:
+
+sql
+ALTER TABLE table_name ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Public full access" ON table_name FOR ALL USING (true) WITH CHECK (true);
+Migration Steps
+SQL Cleanup & Rebuild: Execute the drop-and-rebuild script in Supabase.
+Types: Create src/types/organization.ts unifying all types.
+Services: Rewrite 
+clubs.service.ts
+ and 
+ngo.service.ts
+ into a unified organization.service.ts.
+Pages:
+Unified OrgCreatePage (replaces 
+CreateClubPage
+ and 
+NGOCreatePage
+).
+Unified OrgDetailsPage (replaces 
+ClubDetailsPage
+ and 
+NGODetailsPage
+).
+Components: Refactor components to use the new org terminology.
+User Review Required
+WARNING
+
+This will DELETE ALL EXISTING CLUBS AND NGOS in the database to ensure a clean slate. Since RLS will be public, anyone can edit anything (for now). Please confirm if you are ready for me to write and execute the DROP and CREATE SQL script.

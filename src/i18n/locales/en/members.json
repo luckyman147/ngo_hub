@@ -2,14 +2,14 @@
   "title": "Members",
   "subtitle": "Manage organization members and their statistics",
   "socialMediaStats": "Social Media Presence",
-  "activityStats": "Activity Preferences",
+  "activityStats": "Event Preferences",
   "committeeStats": "Committee Preferences",
   "addMember": "Add Member",
   "totalMembers": "Total Members",
   "leadership": "Leadership Oversight",
   "demographicsTitle": "Community Overview",
   "availabilityTitle": "Availability & Schedule",
-  "performanceTitle": "Activity & Performance",
+  "performanceTitle": "Event & Performance",
   "financialsTitle": "Membership Fees",
   "preferencesTitle": "Interests & Preferences",
   "roles": "Member Roles",
@@ -30,7 +30,7 @@
   "financialHealthDesc": "Membership fee tracking",
   "noAgeData": "No age data",
   "noSocialData": "No social media data",
-  "noActivityData": "No activity data",
+  "noActivityData": "No event data",
   "noCommitteeData": "No committee data",
   "taskPerformance": "Task Performance",
   "totalDone": "Total Done",
@@ -58,5 +58,5 @@
   "topGrowth": "Top Growth",
   "pointGains": "Point gains",
   "monthlyGains": "Monthly point gains",
-  "noPointsActivity": "No points activity found for this period."
+  "noPointsActivity": "No points event found for this period."
 }

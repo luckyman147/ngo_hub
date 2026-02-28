@@ -64,14 +64,14 @@ export default function Register() {
     try {
       // Clear previous errors before signup
       setErrors({})
-      
+
       const response = await signUp(form)
-      
+
       // Check if signUp returned an error
       if (response?.error) {
         console.error('SignUp error:', response.error)
-        setErrors({ 
-          general: response.error.message || 'Failed to create account. Please try again.' 
+        setErrors({
+          general: response.error.message || 'Failed to create account. Please try again.'
         })
         return
       }
@@ -88,6 +88,9 @@ export default function Register() {
     }
   }
 
+  const inputClasses = 'w-full px-4 py-3 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-2xl focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 dark:text-white outline-none transition-all text-sm placeholder:text-slate-400 dark:placeholder:text-slate-500'
+  const labelClasses = 'block text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1 ml-1'
+
   return (
     <AuthForm
       title='Create Account'
@@ -99,7 +102,7 @@ export default function Register() {
     >
       {/* General Error Message */}
       {errors.general && (
-        <div className='bg-red-50 border border-red-100 text-red-600 px-4 py-3 rounded-2xl mb-4 font-bold text-sm'>
+        <div className='bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 text-red-600 dark:text-red-400 px-4 py-3 rounded-2xl mb-4 font-bold text-sm'>
           {errors.general}
         </div>
       )}
@@ -107,11 +110,11 @@ export default function Register() {
       {/* Grid for Name & Phone */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Full Name</label>
+          <label className={labelClasses}>Full Name</label>
           <input
             name='fullname'
             placeholder='John Doe'
-            className='w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:bg-white focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm'
+            className={inputClasses}
             onChange={handleChange}
           />
           {errors.fullname && (
@@ -120,11 +123,11 @@ export default function Register() {
         </div>
 
         <div>
-          <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Phone</label>
+          <label className={labelClasses}>Phone</label>
           <input
             name='phone'
             placeholder='+216 ...'
-            className='w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:bg-white focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm'
+            className={inputClasses}
             onChange={handleChange}
           />
           {errors.phone && (
@@ -135,12 +138,12 @@ export default function Register() {
 
       {/* Email */}
       <div>
-        <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Email Address</label>
+        <label className={labelClasses}>Email Address</label>
         <input
           name='email'
           type="email"
           placeholder='name@company.com'
-          className='w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:bg-white focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm'
+          className={inputClasses}
           onChange={handleChange}
         />
         {errors.email && (
@@ -151,12 +154,12 @@ export default function Register() {
       {/* Grid for Password & Birthday */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Password</label>
+          <label className={labelClasses}>Password</label>
           <input
             type='password'
             name='password'
             placeholder='••••••••'
-            className='w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:bg-white focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm'
+            className={inputClasses}
             onChange={handleChange}
           />
           {errors.password && (
@@ -165,11 +168,11 @@ export default function Register() {
         </div>
 
         <div>
-          <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Birthday</label>
+          <label className={labelClasses}>Birthday</label>
           <input
             type='date'
             name='birth_date'
-            className='w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:bg-white focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm'
+            className={inputClasses + ' [color-scheme:light] dark:[color-scheme:dark]'}
             onChange={handleChange}
           />
           {errors.birth_date && (

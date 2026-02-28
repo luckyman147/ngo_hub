@@ -88,7 +88,7 @@ export function JPSLeaderboardStats(_props: Props) {
     // Group members by role and get top 3 for each role
     const groupByRole = (members: any[]) => {
         const grouped: Record<string, any[]> = {};
-        
+
         members.forEach(m => {
             const roleName = m.role || 'Member';
             if (!grouped[roleName]) grouped[roleName] = [];
@@ -103,7 +103,7 @@ export function JPSLeaderboardStats(_props: Props) {
     // Best 3 members per role (highest JPS scores, excluding executives)
     const topMembersByRole = useMemo(() => {
         let filtered = filterOutExecutives([...leaderboardData]);
-        
+
         // Apply Cotisation Filter
         if (cotisationFilter !== 'all') {
             filtered = filtered.filter(m => {
@@ -135,7 +135,7 @@ export function JPSLeaderboardStats(_props: Props) {
         <div key={member.id} className="flex items-center justify-between group relative pl-2 transition-all hover:pl-4">
             {/* Accent Line on hover */}
             <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-0 bg-(--color-mySecondary) rounded-full transition-all group-hover:h-full" />
-            
+
             <div className="flex items-center gap-4 flex-1 min-w-0">
                 <div className="relative shrink-0">
                     <div className="w-12 h-12 rounded-2xl bg-gray-100 overflow-hidden border-2 border-white shadow-md group-hover:scale-110 transition-transform">
@@ -184,7 +184,7 @@ export function JPSLeaderboardStats(_props: Props) {
                             <Trophy className="w-7 h-7 text-white -rotate-3" />
                         </div>
                         <div>
-                            <h3 className="text-2xl font-black text-gray-900 tracking-tight">{t('members.topJPSLeadership', 'JCI Performance Score')}</h3>
+                            <h3 className="text-2xl font-black text-gray-900 tracking-tight">{t('members.topJPSLeadership', 'Impact Performance Score')}</h3>
                             <div className="flex items-center gap-3 mt-1">
                                 <span className="text-[10px] text-amber-600 font-black uppercase tracking-widest bg-amber-50 px-2 py-0.5 rounded-md border border-amber-100">Leaderboard</span>
                                 <div className="h-1 w-1 rounded-full bg-gray-300" />
@@ -201,9 +201,9 @@ export function JPSLeaderboardStats(_props: Props) {
                                     onClick={() => setActivePeriod(period.id)}
                                     className={cn(
                                         "px-4 py-2 text-xs font-bold rounded-xl transition-all duration-200 tracking-wide uppercase",
-                                        activePeriod === period.id 
-                                        ? "bg-white text-(--color-myPrimary) shadow-md shadow-blue-200/50 scale-105" 
-                                        : "text-gray-500 hover:text-gray-900 hover:bg-white/50"
+                                        activePeriod === period.id
+                                            ? "bg-white text-(--color-myPrimary) shadow-md shadow-blue-200/50 scale-105"
+                                            : "text-gray-500 hover:text-gray-900 hover:bg-white/50"
                                     )}
                                 >
                                     {period.label}
@@ -212,10 +212,10 @@ export function JPSLeaderboardStats(_props: Props) {
                         </div>
 
                         {isAuthorized && (
-                            <button 
+                            <button
                                 onClick={() => {
                                     if (refreshJPSMutation.isPending) {
-                                        toast.info("JPS recalculation is already in progress. Please wait...", {
+                                        toast.info("Score recalculation is already in progress. Please wait...", {
                                             duration: 3000
                                         });
                                     } else {
@@ -226,8 +226,8 @@ export function JPSLeaderboardStats(_props: Props) {
                                 className={cn(
                                     "flex items-center gap-2 px-6 py-3 rounded-2xl transition-all font-black text-xs uppercase tracking-widest border shadow-sm",
                                     refreshJPSMutation.isPending
-                                    ? "bg-gray-50 text-gray-400 border-gray-200 cursor-not-allowed"
-                                    : "bg-(--color-myPrimary) text-white border-(--color-myPrimary) hover:bg-blue-700 hover:shadow-lg hover:shadow-blue-200"
+                                        ? "bg-gray-50 text-gray-400 border-gray-200 cursor-not-allowed"
+                                        : "bg-(--color-myPrimary) text-white border-(--color-myPrimary) hover:bg-blue-700 hover:shadow-lg hover:shadow-blue-200"
                                 )}
                             >
                                 <RefreshCw className={cn("w-4 h-4", refreshJPSMutation.isPending && "animate-spin")} />
@@ -266,7 +266,7 @@ export function JPSLeaderboardStats(_props: Props) {
                                         {role}
                                     </div>
                                 </div>
-                                <div className="space-y-3">  
+                                <div className="space-y-3">
                                     {roleMembers.map((member, idx) => renderMemberCard(member, idx))}
                                 </div>
                             </div>
@@ -274,7 +274,7 @@ export function JPSLeaderboardStats(_props: Props) {
                     </div>
                 )}
             </div>
-            
+
             {/* Footer */}
             <div className="bg-gray-50/50 p-6 border-t border-gray-100 flex flex-wrap items-center justify-center gap-6">
                 <div className="flex items-center gap-2 text-gray-400">

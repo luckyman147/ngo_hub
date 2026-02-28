@@ -15,3 +15,5 @@ export { default as MemberPersonality } from './attributes/MemberPersonality'
 
 export { default as MemberSocialInfo } from './social/MemberSocialInfo'
 export { default as MemberEngagementPrefs } from './social/MemberEngagementPrefs'
+
+export { default as MemberAISummary } from './MemberAISummary'

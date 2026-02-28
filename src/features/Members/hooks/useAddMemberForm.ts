@@ -47,7 +47,7 @@ export const useAddMemberForm = ({ onSuccess }: UseAddMemberProps) => {
 
     const downloadAccessDetails = (fullname: string, email: string, password: string, role: string, isValidated: boolean) => {
         const blob = new Blob([
-            `JCI Member Access Details\n`,
+            ` Member Access Details\n`,
             `-------------------------\n`,
             `Name: ${fullname}\n`,
             `Email: ${email}\n`,
@@ -58,7 +58,7 @@ export const useAddMemberForm = ({ onSuccess }: UseAddMemberProps) => {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `jci_access_${email}.txt`;
+        a.download = `ngo_hub_access_${email}.txt`;
         a.click();
         URL.revokeObjectURL(url);
     };

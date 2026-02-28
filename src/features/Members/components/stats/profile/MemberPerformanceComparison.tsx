@@ -81,7 +81,7 @@ export default function MemberPerformanceComparison({ memberId }: MemberPerforma
             color: 'text-emerald-600',
             bg: 'bg-emerald-50',
             description: 'Balance between meetings, trainings, and events.',
-            hint: 'Identifies "All-Rounders" who contribute to all JCI pillars.'
+            hint: 'Identifies "All-Rounders" who contribute to all NGO pillars.'
         },
         {
             id: 'growth',

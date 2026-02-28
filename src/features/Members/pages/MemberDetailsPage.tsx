@@ -18,6 +18,7 @@ import {
     MemberEngagementPrefs,
     MemberPersonality,
     MemberAdvisor,
+    MemberAISummary,
 } from "../components";
 import Navbar from "../../../Global_Components/navBar";
 import MemberPointsHistory from "../components/stats/profile/MemberPointsHistory";
@@ -163,6 +164,8 @@ export default function MemberDetailsPage() {
                                     onUpdate={(desc) => handleUpdate({ description: desc })}
                                     readOnly={!isOwnProfile && !canEdit}
                                 />
+
+                                <MemberAISummary member={member} readOnly={!isOwnProfile && !canEdit} />
 
                                 <MemberLifestyle 
                                     member={member} 

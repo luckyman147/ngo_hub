@@ -14,7 +14,7 @@ export default function ProtectedRoute({
   requireGuest?: boolean
   allowedRoles?: string[]
 }) {
-  const { user, role, isValidated, loading } = useAuth()
+  const { user, role, loading } = useAuth()
 
   if (loading) {
     return null // or a full-page loader
@@ -28,11 +28,6 @@ export default function ProtectedRoute({
   // If user is not logged in and not a guest route → redirect to login
   if (!user && !requireGuest) {
     return <Navigate to='/login' replace />
-  }
-
-  // If user is logged in but NOT validated -> redirect to pending validation
-  if (user && !isValidated && !requireGuest) {
-      return <Navigate to='/pending-validation' replace />
   }
 
   // If admin is required but user is not admin → redirect to home
