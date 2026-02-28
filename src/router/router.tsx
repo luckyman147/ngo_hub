@@ -33,6 +33,8 @@ import MembersPage from "../features/Members/pages/MembersPage";
 import MemberDetailsPage from "../features/Members/pages/MemberDetailsPage";
 import NGOCreatePage from "../features/NGO/pages/NGOCreatePage";
 import NGODetailsPage from "../features/NGO/pages/NGODetailsPage";
+import OrgCreatePage from "../features/Organizations/pages/OrgCreatePage";
+import OrgDetailsPage from "../features/Organizations/pages/OrgDetailsPage";
 import NotFoundPage from "../Global_Components/NotFoundPage";
 import { EXECUTIVE_LEVELS } from "../utils/roles";
 
@@ -246,6 +248,24 @@ export const router = createBrowserRouter([
         element: (
           <ProtectedRoute>
             <NGODetailsPage />
+          </ProtectedRoute>
+        ),
+      },
+
+      // Unified Organization routes
+      {
+        path: "/orgs/new",
+        element: (
+          <ProtectedRoute>
+            <OrgCreatePage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/orgs/:id",
+        element: (
+          <ProtectedRoute>
+            <OrgDetailsPage />
           </ProtectedRoute>
         ),
       },
