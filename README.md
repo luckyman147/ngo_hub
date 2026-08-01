@@ -71,3 +71,10 @@ export default defineConfig([
   },
 ])
 ```
+
+## Why This Project Stands Out
+
+- **Activist Focused** - Built specifically for NGO operations and advocacy
+- **Community Building** - Tools to organize and mobilize supporters
+- **Modern Stack** - React and TypeScript for reliability and speed
+- **Open Source** - Free for any NGO to use and customize
